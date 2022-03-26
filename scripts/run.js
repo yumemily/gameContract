@@ -1,50 +1,56 @@
 const main = async () => {
-    const gameContractFactory = await hre.ethers.getContractFactory('MyEpicGame');
-    const gameContract = await gameContractFactory.deploy(
-        ["Bulbasaur", "Cyndaquil", "Mudkip"],       // Names
-        ["https://archives.bulbagarden.net/media/upload/thumb/2/21/001Bulbasaur.png/500px-001Bulbasaur.png", // Images
-        "https://archives.bulbagarden.net/media/upload/thumb/9/9b/155Cyndaquil.png/500px-155Cyndaquil.png",
-        "https://archives.bulbagarden.net/media/upload/thumb/6/60/258Mudkip.png/500px-258Mudkip.png"],
+  const gameContractFactory = await hre.ethers.getContractFactory("MyEpicGame");
+  const gameContract = await gameContractFactory.deploy(
+    ["Bulbasaur", "Cyndaquil", "Mudkip"], // Names
+    [
+      "QmXQP9fDEGWGvAh6ZrAmsYks6RsQwjGvERn3JQRoCYxYh6", // Images
+      "QmYPhqtm7opR2BFqwn9oJsoQ93Avcm6dF16q2Q36UvcfMG",
+      "QmZWnLhzM5DMFxczpxarcWWoX4j4pe3Mx6PtbFpm2LPWqc",
+    ],
 
-        [300, 150, 115],                    // HP values
-        [15, 25, 35],                       // Attack damage values
-        ["grass", "fire", "water"],         // Types
-        [2, 3, 4] //Crit
-      );
-    await gameContract.deployed();
-    console.log("Contract deployed to:", gameContract.address);
+    [300, 150, 115], // HP values
+    [15, 25, 35], // Attack damage values
+    ["grass", "fire", "water"], // Types
+    [2, 3, 4], // Crit
+    "Mewtwo", // Boss Name
+    "https://img.pokemondb.net/artwork/mewtwo.jpg", // Boss Image URI
+    500, // Boss HP
+    30 // Boss attack dmg
+  );
+  await gameContract.deployed();
+  console.log("Contract deployed to:", gameContract.address);
 
-    let txn;
-    // We only have 3 characters.
-    // an NFT w/ the character at index 2 of our array
-    txn = await gameContract.mintCharacterNFT(0);
-    await txn.wait();
-    console.log("Minted NFT #1");
+  let txn;
+  // We only have 3 characters.
+  // an NFT w/ the character at index 2 of our array
+  txn = await gameContract.mintCharacterNFT(0);
+  await txn.wait();
+  console.log("Minted NFT #1");
 
-    txn = await gameContract.mintCharacterNFT(1)
-    await txn.wait();
-    console.log("Minted NFT #2");
+  console.log("Done deploying and minting!");
 
-    txn = await gameContract.mintCharacterNFT(2);
-    await txn.wait();
-    console.log("Minted NFT #3");
+  // Get the value of the first NFT's URI.
+  let returnedTokenUri = await gameContract.tokenURI(1);
+  console.log("Token URI:", returnedTokenUri);
 
-    console.log("Done deploying and minting!")
+  let players = await gameContract.getAddresses();
+  console.log("players", players);
 
+  let checkPlayer = await gameContract.checkIfUserHasNFT(players[0]);
+  console.log(checkPlayer);
 
-    // Get the value of the first NFT's URI.
-    let returnedTokenUri = await gameContract.tokenURI(1);
-    console.log("Token URI:", returnedTokenUri)
-  };
-  
-  const runMain = async () => {
-    try {
-      await main();
-      process.exit(0);
-    } catch (error) {
-      console.log(error);
-      process.exit(1);
-    }
-  };
-  
-  runMain();
+  let supply = await gameContract.getSupply();
+  console.log("supply", supply);
+};
+
+const runMain = async () => {
+  try {
+    await main();
+    process.exit(0);
+  } catch (error) {
+    console.log(error);
+    process.exit(1);
+  }
+};
+
+runMain();

@@ -53,18 +53,25 @@ contract MyEpicGame is ERC721 {
         uint256 tokenId,
         uint256 characterIndex
     );
-    event AttackComplete(uint256 newBossHp, uint256 newPlayerHp);
+    event AttackComplete(
+        address sender,
+        uint256 newBossHp,
+        uint256 newPlayerHp
+    );
 
     // Hold boss's attributes in a struct
     struct BigBoss {
         string name;
         string imageURI;
+        string trainer;
         uint256 hp;
         uint256 maxHp;
         uint256 attackDamage;
     }
 
     BigBoss public bigBoss;
+
+    address payable[] public players;
 
     // Data passed in to the contract when it's first created initializing the characters.
     // We're going to actually pass these values in from run.js.
@@ -78,7 +85,8 @@ contract MyEpicGame is ERC721 {
         string memory bossName,
         string memory bossImageURI,
         uint256 bossHp,
-        uint256 bossAttackDamage
+        uint256 bossAttackDamage,
+        string memory bossTrainer
     ) ERC721("Pokemon", "POKE") {
         // Initialize the boss. Save it to our global "bigBoss" state variable.
         bigBoss = BigBoss({
@@ -86,7 +94,8 @@ contract MyEpicGame is ERC721 {
             imageURI: bossImageURI,
             hp: bossHp,
             maxHp: bossHp,
-            attackDamage: bossAttackDamage
+            attackDamage: bossAttackDamage,
+            trainer: bossTrainer
         });
 
         console.log(
@@ -128,6 +137,14 @@ contract MyEpicGame is ERC721 {
 
     // Get functions
 
+    function getAddresses() public view returns (address payable[] memory) {
+        return players;
+    }
+
+    function getSupply() public view returns (uint256) {
+        return _tokenIds.current();
+    }
+
     function getAllDefaultCharacters()
         public
         view
@@ -140,13 +157,13 @@ contract MyEpicGame is ERC721 {
         return bigBoss;
     }
 
-    function checkIfUserHasNFT()
+    function checkIfUserHasNFT(address player)
         public
         view
         returns (CharacterAttributes memory)
     {
         // get the tokenId of hthe user's character NFT
-        uint256 userNftTokenID = nftHolders[msg.sender];
+        uint256 userNftTokenID = nftHolders[player];
         // if the user has a tokenId in the map, return the character.
         if (userNftTokenID > 0) {
             return nftHolderAttributes[userNftTokenID];
@@ -201,7 +218,7 @@ contract MyEpicGame is ERC721 {
         console.log("Player attacked boss. New boss hp is %s", bigBoss.hp);
         console.log("Boss attacked player. New player hp is %s", player.hp);
 
-        emit AttackComplete(bigBoss.hp, player.hp);
+        emit AttackComplete(msg.sender, bigBoss.hp, player.hp);
     }
 
     // Users would be able ot hit this function and mint their NFT based on the character index they send in
@@ -229,11 +246,14 @@ contract MyEpicGame is ERC721 {
             _characterIndex
         );
 
-        // keep an easy wau to see who owns what NFT
+        // keep an easy way to see who owns what NFT
         nftHolders[msg.sender] = newItemId;
 
         // Increment the tokenId after mint for the next person who uses it
         _tokenIds.increment();
+
+        // update addresses array
+        players.push(payable(msg.sender));
 
         // Fire CharacterNFTMinted event
         emit CharacterNFTMinted(msg.sender, newItemId, _characterIndex);
@@ -262,7 +282,7 @@ contract MyEpicGame is ERC721 {
                 charAttributes.name,
                 " # ",
                 Strings.toString(_tokenId),
-                '", "description": "This is an NFT that lets people play in the game Metaverse Slayer!", "image": "',
+                '", "description": "This is an NFT that lets people play in the game Metaverse Slayer!", "image": "ipfs://',
                 charAttributes.imageURI,
                 '", "attributes": [ { "trait_type": "Health Points", "value": ',
                 strHp,
